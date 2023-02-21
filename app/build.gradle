@@ -1,0 +1,113 @@
+//这段buildscript配置的dependencies是为了apply plugin: 'com.tencent.shadow.plugin'能找到实现
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        mavenLocal()
+    }
+
+    dependencies {
+        classpath "com.tencent.shadow.core:gradle-plugin:$shadow_version"
+    }
+}
+
+plugins {
+    id 'com.android.application'
+    id 'com.tencent.shadow.plugin'
+    id 'org.jetbrains.kotlin.android'
+}
+//apply plugin: 'com.tencent.shadow.plugin'
+
+android {
+    namespace 'com.example.shadow_host'
+    compileSdk 32
+
+    defaultConfig {
+        applicationId "com.example.shadow_host"
+        minSdk 21
+        targetSdk 32
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    // 将插件applicationId设置为和宿主相同
+    productFlavors {
+        plugin {
+            applicationId "com.example.shadow_host"
+        }
+    }
+
+    aaptOptions {
+        additionalParameters "--package-id", "0x7E", "--allow-reserved-package-id"
+    }
+}
+
+dependencies {
+
+    implementation 'androidx.core:core-ktx:1.8.0'
+    implementation 'androidx.appcompat:appcompat:1.5.1'
+    implementation 'com.google.android.material:material:1.8.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+
+    compileOnly "com.tencent.shadow.core:runtime:$shadow_version"
+}
+
+shadow {
+    packagePlugin {
+        pluginTypes {
+            debug {
+                loaderApkConfig = new Tuple2('sample-loader-debug.apk', ':sample-loader:assembleDebug')
+                runtimeApkConfig = new Tuple2('sample-runtime-debug.apk', ':sample-runtime:assembleDebug')
+                pluginApks {
+                    pluginApk1 {
+                        businessName = 'sample-plugin'
+//businessName相同的插件，context获取的Dir是相同的。businessName留空，表示和宿主相同业务，直接使用宿主的Dir。
+                        partKey = 'sample-plugin'
+                        buildTask = 'assemblePluginDebug'
+                        apkPath = 'app/build/outputs/apk/plugin/debug/app-plugin-debug.apk'
+                    }
+                }
+            }
+
+            release {
+                loaderApkConfig = new Tuple2('sample-loader-release.apk', ':sample-loader:assembleRelease')
+                runtimeApkConfig = new Tuple2('sample-runtime-release.apk', ':sample-runtime:assembleRelease')
+                pluginApks {
+                    pluginApk1 {
+                        businessName = 'demo'
+                        partKey = 'sample-plugin'
+                        buildTask = 'assemblePluginRelease'
+                        apkPath = 'app/build/outputs/apk/plugin/release/app-plugin-release.apk'
+                    }
+                }
+            }
+        }
+
+        loaderApkProjectPath = 'sample-loader'
+
+        runtimeApkProjectPath = 'sample-runtime'
+
+        version = 4
+        compactVersion = [1, 2, 3]
+        uuidNickName = "1.1.5"
+    }
+}
